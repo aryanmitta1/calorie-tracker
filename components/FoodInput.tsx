@@ -10,7 +10,11 @@ export default function FoodInput({ onAdd }: Props) {
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [flash, setFlash] = useState<{ calories: number; protein: number; description: string } | null>(null);
+  const [flash, setFlash] = useState<{
+    calories: number; caloriesMin: number; caloriesMax: number;
+    protein: number; proteinMin: number; proteinMax: number;
+    description: string; blurb: string;
+  } | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   async function analyze() {
@@ -39,8 +43,7 @@ export default function FoodInput({ onAdd }: Props) {
       setText('');
       textareaRef.current?.focus();
 
-      // Clear flash after 4s
-      setTimeout(() => setFlash(null), 4000);
+      setTimeout(() => setFlash(null), 7000);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Something went wrong');
     } finally {
@@ -50,7 +53,7 @@ export default function FoodInput({ onAdd }: Props) {
 
   return (
     <div className="card mb-4 space-y-3">
-      <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-widest">Log Food with AI</h2>
+      <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-widest">Log Food with AI</h2>
 
       <textarea
         ref={textareaRef}
@@ -59,7 +62,7 @@ export default function FoodInput({ onAdd }: Props) {
         onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) analyze(); }}
         placeholder="e.g. 2 scrambled eggs, cup of oats, protein shake..."
         rows={3}
-        className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white placeholder-slate-600 resize-none focus:outline-none focus:border-purple-500/50 transition-colors"
+        className="w-full bg-zinc-900 border border-zinc-700 rounded-xl p-3 text-sm text-white placeholder-zinc-600 resize-none focus:outline-none focus:border-blue-500/50 transition-colors"
       />
 
       <AnimatePresence>
@@ -69,11 +72,26 @@ export default function FoodInput({ onAdd }: Props) {
             initial={{ opacity: 0, y: -6 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            className="flex flex-wrap gap-x-3 gap-y-1 text-xs p-2.5 rounded-xl bg-purple-500/10 border border-purple-500/20"
+            className="text-xs p-2.5 rounded-xl bg-zinc-800 border border-zinc-700 space-y-1.5"
           >
-            <span className="text-purple-300 font-medium truncate flex-1">{flash.description}</span>
-            <span className="text-amber-400 font-semibold shrink-0">+{flash.calories} kcal</span>
-            <span className="text-emerald-400 font-semibold shrink-0">+{flash.protein}g protein</span>
+            <div className="flex items-center gap-1.5 text-blue-400 font-semibold">
+              <span>✓</span>
+              <span>Logged to diary</span>
+            </div>
+            <p className="text-zinc-300 leading-snug">{flash.description}</p>
+            <div className="flex gap-3">
+              <span className="text-orange-500 font-semibold">
+                +{flash.calories} kcal
+                <span className="text-orange-500/50 font-normal ml-1">({flash.caloriesMin}–{flash.caloriesMax})</span>
+              </span>
+              <span className="text-blue-400 font-semibold">
+                +{flash.protein}g protein
+                <span className="text-blue-400/50 font-normal ml-1">({flash.proteinMin}–{flash.proteinMax}g)</span>
+              </span>
+            </div>
+            {flash.blurb && (
+              <p className="text-zinc-500 leading-snug pt-0.5 border-t border-zinc-700">{flash.blurb}</p>
+            )}
           </motion.div>
         )}
         {error && (
@@ -93,8 +111,7 @@ export default function FoodInput({ onAdd }: Props) {
         onClick={analyze}
         disabled={loading || !text.trim()}
         className="w-full py-3 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center justify-center gap-2
-          bg-gradient-to-r from-purple-600 to-purple-700
-          hover:from-purple-500 hover:to-purple-600
+          bg-blue-600 hover:bg-blue-500
           disabled:opacity-40 disabled:cursor-not-allowed
           active:scale-[0.98]"
       >

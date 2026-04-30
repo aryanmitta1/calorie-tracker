@@ -9,7 +9,7 @@ interface Props {
   onChange: (v: number) => void;
 }
 
-const hex = { amber: '#f59e0b', emerald: '#10b981' };
+const hex = { amber: '#f97316', emerald: '#60a5fa' };
 
 export default function NutrientSlider({ label, value, max, unit, color, onChange }: Props) {
   const capped = Math.min(value, max);
@@ -19,7 +19,7 @@ export default function NutrientSlider({ label, value, max, unit, color, onChang
   return (
     <div className="space-y-2">
       <div className="flex justify-between items-baseline">
-        <span className="text-sm text-slate-300 font-medium">{label}</span>
+        <span className="text-sm text-zinc-300 font-medium">{label}</span>
         <span
           className="text-sm font-bold tabular-nums"
           style={{ color: h }}
@@ -35,12 +35,12 @@ export default function NutrientSlider({ label, value, max, unit, color, onChang
         value={capped}
         onChange={e => onChange(Number(e.target.value))}
         style={{
-          background: `linear-gradient(to right, ${h} ${pct}%, rgba(255,255,255,0.1) ${pct}%)`,
+          background: `linear-gradient(to right, ${h} ${pct}%, #27272a ${pct}%)`,
         }}
         className="w-full"
       />
 
-      <div className="flex justify-between text-[10px] text-slate-600">
+      <div className="flex justify-between text-[10px] text-zinc-600">
         <span>0</span>
         <span>{Math.round(max).toLocaleString()} {unit}</span>
       </div>

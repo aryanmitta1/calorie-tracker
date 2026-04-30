@@ -25,14 +25,14 @@ export async function POST(req: NextRequest) {
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       temperature: 0.2,
-      max_tokens: 120,
+      max_tokens: 280,
       response_format: { type: 'json_object' },
       messages: [
         {
           role: 'system',
           content: `You are a precise nutrition expert. Given a food description, return ONLY valid JSON:
-{"calories": <integer kcal>, "protein": <integer grams>, "description": "<short label under 60 chars>"}
-Sum all items if multiple foods are listed. Be accurate and realistic.`,
+{"calories": <integer kcal best estimate>, "caloriesMin": <integer lower bound>, "caloriesMax": <integer upper bound>, "protein": <integer grams best estimate>, "proteinMin": <integer lower bound>, "proteinMax": <integer upper bound>, "description": "<short label under 60 chars>", "blurb": "<1-2 sentence insight about this meal's nutrition — macros, energy, what it's good for>"}
+Sum all items if multiple foods are listed. Be accurate and realistic. Ranges should reflect realistic variation in portion size and preparation. Keep the blurb conversational and under 120 chars.`,
         },
         { role: 'user', content: food },
       ],
@@ -41,10 +41,17 @@ Sum all items if multiple foods are listed. Be accurate and realistic.`,
     const raw = completion.choices[0].message.content ?? '{}';
     const parsed = JSON.parse(raw);
 
+    const calories = Math.max(0, Math.round(Number(parsed.calories) || 0));
+    const protein = Math.max(0, Math.round(Number(parsed.protein) || 0));
     return NextResponse.json({
-      calories: Math.max(0, Math.round(Number(parsed.calories) || 0)),
-      protein: Math.max(0, Math.round(Number(parsed.protein) || 0)),
+      calories,
+      caloriesMin: Math.max(0, Math.round(Number(parsed.caloriesMin) || calories)),
+      caloriesMax: Math.max(0, Math.round(Number(parsed.caloriesMax) || calories)),
+      protein,
+      proteinMin: Math.max(0, Math.round(Number(parsed.proteinMin) || protein)),
+      proteinMax: Math.max(0, Math.round(Number(parsed.proteinMax) || protein)),
       description: String(parsed.description || food).slice(0, 80),
+      blurb: String(parsed.blurb || '').slice(0, 160),
     });
   } catch (err) {
     console.error('OpenAI error:', err);

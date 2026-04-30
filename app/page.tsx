@@ -31,31 +31,29 @@ export default function Home() {
 
   if (!ready) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#06030f]">
-        <div className="w-6 h-6 border-2 border-white/20 border-t-purple-400 rounded-full animate-spin" />
+      <div className="min-h-screen flex items-center justify-center bg-[#0f0f0f]">
+        <div className="w-6 h-6 border-2 border-zinc-700 border-t-blue-400 rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-[#06030f] via-[#090614] to-[#06030f] text-white">
-      {/* Subtle top glow */}
-      <div className="pointer-events-none fixed inset-x-0 top-0 h-64 bg-gradient-to-b from-purple-900/20 to-transparent" />
+    <main className="min-h-screen bg-[#0f0f0f] text-white">
 
       <div className="relative max-w-sm mx-auto px-4 pt-12 pb-24">
 
         {/* Header */}
         <div className="flex items-start justify-between mb-8">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-amber-400 via-purple-400 to-emerald-400 bg-clip-text text-transparent">
+            <h1 className="text-2xl font-bold tracking-tight text-white">
               NutriTrack
             </h1>
-            <p className="text-slate-500 text-xs mt-0.5">{dateLabel}</p>
+            <p className="text-zinc-500 text-xs mt-0.5">{dateLabel}</p>
           </div>
           <button
             onClick={() => { setShowSettings(v => !v); setConfirmReset(false); }}
             aria-label="Settings"
-            className="mt-0.5 w-9 h-9 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors active:scale-95 text-slate-400 text-base"
+            className="mt-0.5 w-9 h-9 flex items-center justify-center rounded-xl bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 transition-colors active:scale-95 text-zinc-400 text-base"
           >
             ⚙
           </button>
@@ -92,7 +90,7 @@ export default function Home() {
 
         {/* Sliders */}
         <div className="card mb-5 space-y-6">
-          <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-widest">Manual Adjust</h2>
+          <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-widest">Manual Adjust</h2>
           <NutrientSlider
             label="Calories"
             value={data.calories}
@@ -123,8 +121,8 @@ export default function Home() {
           whileTap={{ scale: 0.97 }}
           className={`w-full mt-5 py-3.5 rounded-2xl border text-sm font-medium transition-all duration-300
             ${confirmReset
-              ? 'bg-red-500/20 border-red-500/40 text-red-300'
-              : 'bg-white/[0.03] border-white/10 text-slate-500 hover:bg-red-500/10 hover:border-red-500/20 hover:text-red-400'
+              ? 'bg-red-500/15 border-red-500/40 text-red-400'
+              : 'bg-zinc-900 border-zinc-800 text-zinc-600 hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-400'
             }`}
         >
           {confirmReset ? 'Tap again to confirm reset' : 'Reset Day'}
