@@ -46,7 +46,7 @@ export default function Home() {
         <div className="flex items-start justify-between mb-8">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-white">
-              NutriTrack
+              Aryan's Calorie Tracker
             </h1>
             <p className="text-zinc-500 text-xs mt-0.5">{dateLabel}</p>
           </div>
