@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useNutrition } from '@/hooks/useNutrition';
 import NutrientProgress from '@/components/NutrientProgress';
-import NutrientSlider from '@/components/NutrientSlider';
+import NutrientInput from '@/components/NutrientInput';
 import FoodInput from '@/components/FoodInput';
 import FoodSearch from '@/components/FoodSearch';
 import BarcodeScanner from '@/components/BarcodeScanner';
@@ -88,11 +88,11 @@ export default function Home() {
               <NutrientProgress label="Carbs" current={data.carbs} goal={goals.carbs} unit="g" color="violet" />
             </div>
 
-            <div className="card mb-5 space-y-6">
+            <div className="card mb-5 space-y-4">
               <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-widest">Manual Adjust</h2>
-              <NutrientSlider label="Calories" value={data.calories} max={goals.calories * 1.5} unit="kcal" color="amber" onChange={setCalories} />
-              <NutrientSlider label="Protein" value={data.protein} max={goals.protein * 2} unit="g" color="emerald" onChange={setProtein} />
-              <NutrientSlider label="Carbs" value={data.carbs} max={goals.carbs * 2} unit="g" color="violet" onChange={setCarbs} />
+              <NutrientInput label="Calories" value={data.calories} unit="kcal" color="amber" onChange={setCalories} />
+              <NutrientInput label="Protein" value={data.protein} unit="g" color="emerald" onChange={setProtein} />
+              <NutrientInput label="Carbs" value={data.carbs} unit="g" color="violet" onChange={setCarbs} />
             </div>
 
             <FoodLog entries={data.log} />

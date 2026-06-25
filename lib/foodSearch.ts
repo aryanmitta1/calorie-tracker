@@ -1,5 +1,7 @@
 // Open Food Facts integration — free, no API key required.
-// Docs: https://openfoodfacts.github.io/openfoodfacts-server/api/
+// Requests go through our own /api proxy routes (server-side) to avoid
+// browser CORS/connectivity issues. Docs:
+// https://openfoodfacts.github.io/openfoodfacts-server/api/
 
 export interface FoodResult {
   id: string;
@@ -12,10 +14,6 @@ export interface FoodResult {
   /** Human label for the serving, e.g. "30 g" or "1 cup (240 ml)". */
   servingLabel: string | null;
 }
-
-const SEARCH_URL = 'https://world.openfoodfacts.org/cgi/search.pl';
-const PRODUCT_URL = 'https://world.openfoodfacts.org/api/v2/product';
-const FIELDS = 'code,product_name,brands,nutriments,serving_size,serving_quantity';
 
 interface OFFNutriments {
   'energy-kcal_100g'?: number;
@@ -72,8 +70,7 @@ export async function searchFoods(query: string, signal?: AbortSignal): Promise<
   const q = query.trim();
   if (!q) return [];
 
-  const url = `${SEARCH_URL}?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=20&fields=${FIELDS}`;
-  const res = await fetch(url, { signal });
+  const res = await fetch(`/api/food-search?q=${encodeURIComponent(q)}`, { signal });
   if (!res.ok) throw new Error('Search failed');
 
   const data = (await res.json()) as { products?: OFFProduct[] };
@@ -86,8 +83,7 @@ export async function lookupBarcode(code: string, signal?: AbortSignal): Promise
   const clean = code.trim();
   if (!clean) return null;
 
-  const url = `${PRODUCT_URL}/${encodeURIComponent(clean)}.json?fields=${FIELDS}`;
-  const res = await fetch(url, { signal });
+  const res = await fetch(`/api/barcode?code=${encodeURIComponent(clean)}`, { signal });
   if (!res.ok) throw new Error('Lookup failed');
 
   const data = (await res.json()) as { status?: number; product?: OFFProduct };

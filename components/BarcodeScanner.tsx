@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { BrowserMultiFormatReader, type IScannerControls } from '@zxing/browser';
 import { lookupBarcode, type FoodResult } from '@/lib/foodSearch';
@@ -18,37 +18,12 @@ export default function BarcodeScanner({ onAdd }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const controlsRef = useRef<IScannerControls | null>(null);
 
-  function stopCamera() {
+  const stopCamera = useCallback(() => {
     controlsRef.current?.stop();
     controlsRef.current = null;
-  }
+  }, []);
 
-  useEffect(() => () => stopCamera(), []);
-
-  async function start() {
-    setStatus('scanning');
-    setMessage('');
-    setFound(null);
-
-    try {
-      const reader = new BrowserMultiFormatReader();
-      controlsRef.current = await reader.decodeFromVideoDevice(
-        undefined,
-        videoRef.current!,
-        async (result, _err, controls) => {
-          if (!result) return;
-          controls.stop();
-          controlsRef.current = null;
-          await handleCode(result.getText());
-        },
-      );
-    } catch {
-      setStatus('error');
-      setMessage('Camera unavailable. Grant camera permission or use search instead.');
-    }
-  }
-
-  async function handleCode(code: string) {
+  const handleCode = useCallback(async (code: string) => {
     setStatus('looking-up');
     try {
       const product = await lookupBarcode(code);
@@ -63,7 +38,45 @@ export default function BarcodeScanner({ onAdd }: Props) {
       setStatus('error');
       setMessage('Lookup failed — check your connection.');
     }
-  }
+  }, []);
+
+  // Start the camera only once the <video> element is actually mounted
+  // (i.e. after status flips to 'scanning' and React has rendered it).
+  useEffect(() => {
+    if (status !== 'scanning' || !videoRef.current) return;
+
+    let cancelled = false;
+    const reader = new BrowserMultiFormatReader();
+
+    reader
+      .decodeFromVideoDevice(undefined, videoRef.current, (result, _err, controls) => {
+        if (!result) return;
+        controls.stop();
+        controlsRef.current = null;
+        handleCode(result.getText());
+      })
+      .then(controls => {
+        if (cancelled) {
+          controls.stop();
+          return;
+        }
+        controlsRef.current = controls;
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setStatus('error');
+        setMessage('Camera unavailable. Grant camera permission or use search instead.');
+      });
+
+    return () => {
+      cancelled = true;
+      controlsRef.current?.stop();
+      controlsRef.current = null;
+    };
+  }, [status, handleCode]);
+
+  // Clean up if the component unmounts mid-scan.
+  useEffect(() => () => stopCamera(), [stopCamera]);
 
   function handleConfirm(calories: number, protein: number, carbs: number, description: string) {
     onAdd(calories, protein, carbs, description);
@@ -77,7 +90,7 @@ export default function BarcodeScanner({ onAdd }: Props) {
 
       {status === 'scanning' && (
         <div className="relative rounded-xl overflow-hidden bg-black aspect-video">
-          <video ref={videoRef} className="w-full h-full object-cover" muted playsInline />
+          <video ref={videoRef} className="w-full h-full object-cover" muted autoPlay playsInline />
           <div className="absolute inset-0 border-2 border-blue-500/40 rounded-xl pointer-events-none" />
         </div>
       )}
@@ -108,7 +121,7 @@ export default function BarcodeScanner({ onAdd }: Props) {
       ) : (
         !found && (
           <button
-            onClick={start}
+            onClick={() => { setMessage(''); setFound(null); setStatus('scanning'); }}
             className="w-full py-3 rounded-xl font-semibold text-sm bg-blue-600 hover:bg-blue-500 transition-colors active:scale-[0.98]"
           >
             ▢ Start camera
