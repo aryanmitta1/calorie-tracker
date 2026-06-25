@@ -13,7 +13,7 @@ export default function GoalSettings({ goals, onUpdate, onClose }: Props) {
   const [local, setLocal] = useState(goals);
 
   function save() {
-    if (local.calories > 0 && local.protein > 0) {
+    if (local.calories > 0 && local.protein > 0 && local.carbs > 0) {
       onUpdate(local);
       onClose();
     }
@@ -48,6 +48,17 @@ export default function GoalSettings({ goals, onUpdate, onClose }: Props) {
             value={local.protein}
             onChange={e => setLocal(p => ({ ...p, protein: Number(e.target.value) }))}
             className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-blue-400/60 transition-colors"
+          />
+        </div>
+
+        <div>
+          <label className="text-xs text-zinc-500 mb-1.5 block">Carbs goal (g)</label>
+          <input
+            type="number"
+            inputMode="numeric"
+            value={local.carbs}
+            onChange={e => setLocal(p => ({ ...p, carbs: Number(e.target.value) }))}
+            className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-400/60 transition-colors"
           />
         </div>
       </div>

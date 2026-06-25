@@ -34,7 +34,8 @@ export default function FoodLog({ entries }: Props) {
               </div>
               <div className="flex flex-col items-end shrink-0 gap-0.5 text-xs font-semibold tabular-nums">
                 <span className="text-orange-500">+{entry.calories} kcal</span>
-                <span className="text-blue-400">+{entry.protein}g</span>
+                <span className="text-blue-400">+{entry.protein}g P</span>
+                <span className="text-violet-400">+{entry.carbs}g C</span>
               </div>
             </motion.li>
           ))}

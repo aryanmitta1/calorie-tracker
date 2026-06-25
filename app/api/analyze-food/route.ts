@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
         {
           role: 'system',
           content: `You are a precise nutrition expert. Given a food description, return ONLY valid JSON:
-{"calories": <integer kcal best estimate>, "caloriesMin": <integer lower bound>, "caloriesMax": <integer upper bound>, "protein": <integer grams best estimate>, "proteinMin": <integer lower bound>, "proteinMax": <integer upper bound>, "description": "<short label under 60 chars>", "blurb": "<1-2 sentence insight about this meal's nutrition — macros, energy, what it's good for>"}
+{"calories": <integer kcal best estimate>, "caloriesMin": <integer lower bound>, "caloriesMax": <integer upper bound>, "protein": <integer grams best estimate>, "proteinMin": <integer lower bound>, "proteinMax": <integer upper bound>, "carbs": <integer grams best estimate>, "carbsMin": <integer lower bound>, "carbsMax": <integer upper bound>, "description": "<short label under 60 chars>", "blurb": "<1-2 sentence insight about this meal's nutrition — macros, energy, what it's good for>"}
 Sum all items if multiple foods are listed. Be accurate and realistic. Ranges should reflect realistic variation in portion size and preparation. Keep the blurb conversational and under 120 chars.`,
         },
         { role: 'user', content: food },
@@ -43,6 +43,7 @@ Sum all items if multiple foods are listed. Be accurate and realistic. Ranges sh
 
     const calories = Math.max(0, Math.round(Number(parsed.calories) || 0));
     const protein = Math.max(0, Math.round(Number(parsed.protein) || 0));
+    const carbs = Math.max(0, Math.round(Number(parsed.carbs) || 0));
     return NextResponse.json({
       calories,
       caloriesMin: Math.max(0, Math.round(Number(parsed.caloriesMin) || calories)),
@@ -50,6 +51,9 @@ Sum all items if multiple foods are listed. Be accurate and realistic. Ranges sh
       protein,
       proteinMin: Math.max(0, Math.round(Number(parsed.proteinMin) || protein)),
       proteinMax: Math.max(0, Math.round(Number(parsed.proteinMax) || protein)),
+      carbs,
+      carbsMin: Math.max(0, Math.round(Number(parsed.carbsMin) || carbs)),
+      carbsMax: Math.max(0, Math.round(Number(parsed.carbsMax) || carbs)),
       description: String(parsed.description || food).slice(0, 80),
       blurb: String(parsed.blurb || '').slice(0, 160),
     });

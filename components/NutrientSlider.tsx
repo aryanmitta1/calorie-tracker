@@ -5,11 +5,11 @@ interface Props {
   value: number;
   max: number;
   unit: string;
-  color: 'amber' | 'emerald';
+  color: 'amber' | 'emerald' | 'violet';
   onChange: (v: number) => void;
 }
 
-const hex = { amber: '#f97316', emerald: '#60a5fa' };
+const hex = { amber: '#f97316', emerald: '#60a5fa', violet: '#a78bfa' };
 
 export default function NutrientSlider({ label, value, max, unit, color, onChange }: Props) {
   const capped = Math.min(value, max);

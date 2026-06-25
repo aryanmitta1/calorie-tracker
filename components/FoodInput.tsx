@@ -3,7 +3,7 @@ import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Props {
-  onAdd: (calories: number, protein: number, description: string) => void;
+  onAdd: (calories: number, protein: number, carbs: number, description: string) => void;
 }
 
 export default function FoodInput({ onAdd }: Props) {
@@ -13,6 +13,7 @@ export default function FoodInput({ onAdd }: Props) {
   const [flash, setFlash] = useState<{
     calories: number; caloriesMin: number; caloriesMax: number;
     protein: number; proteinMin: number; proteinMax: number;
+    carbs: number; carbsMin: number; carbsMax: number;
     description: string; blurb: string;
   } | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -38,7 +39,7 @@ export default function FoodInput({ onAdd }: Props) {
       }
 
       const result = await res.json();
-      onAdd(result.calories, result.protein, result.description);
+      onAdd(result.calories, result.protein, result.carbs, result.description);
       setFlash(result);
       setText('');
       textareaRef.current?.focus();
@@ -79,7 +80,7 @@ export default function FoodInput({ onAdd }: Props) {
               <span>Logged to diary</span>
             </div>
             <p className="text-zinc-300 leading-snug">{flash.description}</p>
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-x-3 gap-y-1">
               <span className="text-orange-500 font-semibold">
                 +{flash.calories} kcal
                 <span className="text-orange-500/50 font-normal ml-1">({flash.caloriesMin}–{flash.caloriesMax})</span>
@@ -87,6 +88,10 @@ export default function FoodInput({ onAdd }: Props) {
               <span className="text-blue-400 font-semibold">
                 +{flash.protein}g protein
                 <span className="text-blue-400/50 font-normal ml-1">({flash.proteinMin}–{flash.proteinMax}g)</span>
+              </span>
+              <span className="text-violet-400 font-semibold">
+                +{flash.carbs}g carbs
+                <span className="text-violet-400/50 font-normal ml-1">({flash.carbsMin}–{flash.carbsMax}g)</span>
               </span>
             </div>
             {flash.blurb && (

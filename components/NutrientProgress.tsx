@@ -6,7 +6,7 @@ interface Props {
   current: number;
   goal: number;
   unit: string;
-  color: 'amber' | 'emerald';
+  color: 'amber' | 'emerald' | 'violet';
 }
 
 const palette = {
@@ -20,6 +20,13 @@ const palette = {
   emerald: {
     text: 'text-blue-400',
     bar: 'bg-blue-400',
+    glow: '',
+    border: 'border-zinc-800',
+    subtext: 'text-zinc-500',
+  },
+  violet: {
+    text: 'text-violet-400',
+    bar: 'bg-violet-400',
     glow: '',
     border: 'border-zinc-800',
     subtext: 'text-zinc-500',
