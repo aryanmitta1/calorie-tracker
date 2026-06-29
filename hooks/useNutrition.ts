@@ -71,6 +71,18 @@ function stamp(): string {
   return new Date().toISOString().replace(/[:.]/g, '-');
 }
 
+/**
+ * Collision-resistant id. A bare Date.now() collides when two entries are
+ * created in the same millisecond (e.g. rapid taps on a custom-food button),
+ * which would break removeFood's per-id subtract/filter and React list keys.
+ */
+function uid(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
 function emptyDay(date = todayString()): DayData {
   return { calories: 0, protein: 0, carbs: 0, log: [], date };
 }
@@ -192,7 +204,7 @@ export function useNutrition() {
       protein: day.protein + protein,
       carbs: day.carbs + carbs,
       log: [
-        { id: Date.now().toString(), description, calories, protein, carbs, timestamp: Date.now() },
+        { id: uid(), description, calories, protein, carbs, timestamp: Date.now() },
         ...day.log,
       ],
     }));
@@ -219,17 +231,13 @@ export function useNutrition() {
 
   // Manual adjust applies a signed delta to a running total (e.g. +20, -50)
   // rather than overwriting it. Totals are floored at 0.
-  const adjustCalories = useCallback((delta: number) => {
-    commit(day => ({ ...day, calories: Math.max(0, day.calories + delta) }));
+  const adjust = useCallback((field: 'calories' | 'protein' | 'carbs', delta: number) => {
+    commit(day => ({ ...day, [field]: Math.max(0, day[field] + delta) }));
   }, [commit]);
 
-  const adjustProtein = useCallback((delta: number) => {
-    commit(day => ({ ...day, protein: Math.max(0, day.protein + delta) }));
-  }, [commit]);
-
-  const adjustCarbs = useCallback((delta: number) => {
-    commit(day => ({ ...day, carbs: Math.max(0, day.carbs + delta) }));
-  }, [commit]);
+  const adjustCalories = useCallback((delta: number) => adjust('calories', delta), [adjust]);
+  const adjustProtein = useCallback((delta: number) => adjust('protein', delta), [adjust]);
+  const adjustCarbs = useCallback((delta: number) => adjust('carbs', delta), [adjust]);
 
   // Reset clears only today; prior days in history are preserved.
   const reset = useCallback(() => {
@@ -268,7 +276,7 @@ export function useNutrition() {
 
   const addCustomFood = useCallback((food: Omit<CustomFood, 'id'>) => {
     setCustomFoods(prev => {
-      const next = [...prev, { ...food, id: Date.now().toString() }];
+      const next = [...prev, { ...food, id: uid() }];
       saveCustomFoodsSafe(next);
       return next;
     });

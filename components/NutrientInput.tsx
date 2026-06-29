@@ -18,9 +18,12 @@ export default function NutrientInput({ label, value, unit, color, onAdjust }: P
   const h = hex[color];
 
   function apply(sign: 1 | -1) {
-    const n = Math.round(Number(draft) || 0);
-    if (n <= 0) return;
-    onAdjust(sign * n);
+    // A typed sign (e.g. "-50") combines with the button: the −/+ button sets
+    // the base direction, a leading minus in the field flips it. Empty/zero/junk
+    // clears without applying so the field is always ready for the next nudge.
+    const magnitude = Math.round(Math.abs(Number(draft) || 0));
+    const direction = Number(draft) < 0 ? -sign : sign;
+    if (magnitude > 0) onAdjust(direction * magnitude);
     setDraft('');
   }
 
