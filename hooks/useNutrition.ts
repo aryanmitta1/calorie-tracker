@@ -1,5 +1,24 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
+import {
+  loadHistoryRaw,
+  saveHistorySafe,
+  loadGoalsRaw,
+  saveGoalsSafe,
+  loadCustomFoodsRaw,
+  saveCustomFoodsSafe,
+  safeGet,
+  safeRemove,
+  serializeExport,
+  parseImport,
+  mergeImport,
+  mergeCustomFoods,
+  getLastBackupAt,
+  setLastBackupAt,
+  LEGACY_DATA_KEY,
+  PREIMPORT_KEY,
+  type MergeSummary,
+} from '@/lib/storage';
 
 export interface FoodEntry {
   id: string;
@@ -26,10 +45,18 @@ export interface Goals {
   carbs: number;
 }
 
+export interface CustomFood {
+  id: string;
+  name: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+}
+
 const DEFAULT_GOALS: Goals = { calories: 2150, protein: 155, carbs: 250 };
-const HISTORY_KEY = 'nt-history';
-const LEGACY_DATA_KEY = 'nt-data';
-const GOALS_KEY = 'nt-goals';
+const DEFAULT_CUSTOM_FOODS: CustomFood[] = [
+  { id: 'office-yogurt', name: 'Office Yogurt', calories: 60, protein: 12, carbs: 5 },
+];
 
 export function todayString() {
   const d = new Date();
@@ -37,6 +64,11 @@ export function todayString() {
   const mm = String(d.getMonth() + 1).padStart(2, '0');
   const dd = String(d.getDate()).padStart(2, '0');
   return `${yyyy}-${mm}-${dd}`;
+}
+
+function stamp(): string {
+  // Filesystem/key-safe timestamp for quarantine + export filenames.
+  return new Date().toISOString().replace(/[:.]/g, '-');
 }
 
 function emptyDay(date = todayString()): DayData {
@@ -54,61 +86,89 @@ function normalizeDay(raw: Partial<DayData> | undefined, date: string): DayData 
   };
 }
 
-/**
- * Load the full history map, performing a one-time migration of the legacy
- * single-day `nt-data` key into the history map keyed by its own date.
- */
-function loadHistory(): History {
-  let history: History = {};
-
-  const storedHistory = localStorage.getItem(HISTORY_KEY);
-  if (storedHistory) {
-    try {
-      const parsed = JSON.parse(storedHistory) as History;
-      for (const [date, day] of Object.entries(parsed)) {
-        history[date] = normalizeDay(day, date);
-      }
-    } catch {
-      history = {};
-    }
+function normalizeHistory(raw: History): History {
+  const out: History = {};
+  for (const [date, day] of Object.entries(raw)) {
+    out[date] = normalizeDay(day, date);
   }
+  return out;
+}
 
-  // Migrate legacy nt-data (pre-history) into the map, then retire the key.
-  const legacy = localStorage.getItem(LEGACY_DATA_KEY);
-  if (legacy) {
-    try {
-      const parsed = JSON.parse(legacy) as DayData;
-      const date = parsed.date || todayString();
-      if (!history[date]) history[date] = normalizeDay(parsed, date);
-    } catch {
-      /* ignore malformed legacy data */
-    }
-    localStorage.removeItem(LEGACY_DATA_KEY);
-  }
-
-  return history;
+export interface ImportResult {
+  ok: boolean;
+  summary?: MergeSummary;
+  error?: string;
 }
 
 export function useNutrition() {
   const [history, setHistory] = useState<History>({});
   const [goals, setGoals] = useState<Goals>(DEFAULT_GOALS);
+  const [customFoods, setCustomFoods] = useState<CustomFood[]>(DEFAULT_CUSTOM_FOODS);
   const [ready, setReady] = useState(false);
+  const [lastBackupAt, setLastBackupState] = useState<number | null>(null);
 
   useEffect(() => {
-    const storedGoals = localStorage.getItem(GOALS_KEY);
-    if (storedGoals) {
-      try {
-        const parsed = JSON.parse(storedGoals);
-        // Keep new defaults for pre-carbs goals; otherwise honor stored goals.
-        if (typeof parsed.carbs === 'number') setGoals(parsed);
-      } catch {
-        /* keep defaults */
-      }
+    // Best-effort: ask the browser to make our storage persistent so it isn't
+    // evicted under storage pressure. Works on Chrome/Firefox/Android/desktop;
+    // a harmless no-op on iOS Safari (there, Home-Screen install is what helps).
+    try {
+      navigator.storage?.persist?.().catch(() => {});
+    } catch {
+      /* ignore */
     }
 
-    const loaded = loadHistory();
-    setHistory(loaded);
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(loaded));
+    // Goals: keep defaults for pre-carbs goals; otherwise honor stored.
+    const storedGoals = loadGoalsRaw();
+    if (storedGoals && typeof storedGoals.carbs === 'number') {
+      setGoals(storedGoals);
+    }
+
+    // Custom foods.
+    const storedCustom = loadCustomFoodsRaw();
+    if (storedCustom) setCustomFoods(storedCustom);
+
+    // History: defensive load. NEVER overwrite storage on a failed read — this
+    // is the core fix for the original "corrupt read → silent total wipe" bug.
+    const { history: loaded, needsHeal } = loadHistoryRaw(stamp());
+
+    if (loaded == null) {
+      // Unrecoverable corruption: run this session with an empty in-memory map
+      // but do NOT persist it. The corrupt bytes are already quarantined and
+      // the real keys are left untouched so manual recovery stays possible.
+      setHistory({});
+      setLastBackupState(getLastBackupAt());
+      setReady(true);
+      return;
+    }
+
+    let next = normalizeHistory(loaded);
+    let mutated = false;
+
+    // One-time migration of legacy single-day `nt-data` into the map.
+    const legacy = safeGet(LEGACY_DATA_KEY);
+    if (legacy) {
+      try {
+        const parsed = JSON.parse(legacy) as DayData;
+        const date = parsed.date || todayString();
+        if (!next[date]) {
+          next = { ...next, [date]: normalizeDay(parsed, date) };
+          mutated = true;
+        }
+      } catch {
+        /* ignore malformed legacy data */
+      }
+      safeRemove(LEGACY_DATA_KEY);
+    }
+
+    setHistory(next);
+    setLastBackupState(getLastBackupAt());
+
+    // Only write back when we actually changed something (migration) or when we
+    // recovered from the mirror and need to restore primary+mirror redundancy.
+    if (mutated || needsHeal) {
+      saveHistorySafe(next);
+    }
+
     setReady(true);
   }, []);
 
@@ -120,7 +180,7 @@ export function useNutrition() {
       const date = todayString();
       const current = prev[date] ?? emptyDay(date);
       const next: History = { ...prev, [date]: updater(current) };
-      localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
+      saveHistorySafe(next);
       return next;
     });
   }, []);
@@ -155,10 +215,159 @@ export function useNutrition() {
     commit(() => emptyDay());
   }, [commit]);
 
-  const updateGoals = useCallback((g: Goals) => {
-    setGoals(g);
-    localStorage.setItem(GOALS_KEY, JSON.stringify(g));
+  /**
+   * Keep today in the long-term log. Today is already auto-saved under its date
+   * key, so this is a no-op for storage — it exists for an explicit, readable
+   * call site at the "Save to log" choice.
+   */
+  const keepDay = useCallback(() => {
+    /* already persisted by commit() on every edit */
   }, []);
 
-  return { data, history, goals, ready, addFood, setCalories, setProtein, setCarbs, reset, updateGoals };
+  /**
+   * Discard today entirely: remove its record from history so it does not count
+   * toward stats/averages/streak, and the board returns to 0. Prior days are
+   * untouched. If today has no record yet, this is a harmless no-op.
+   */
+  const discardDay = useCallback(() => {
+    setHistory(prev => {
+      const date = todayString();
+      if (!(date in prev)) return prev;
+      const next: History = { ...prev };
+      delete next[date];
+      saveHistorySafe(next);
+      return next;
+    });
+  }, []);
+
+  const updateGoals = useCallback((g: Goals) => {
+    setGoals(g);
+    saveGoalsSafe(g);
+  }, []);
+
+  const addCustomFood = useCallback((food: Omit<CustomFood, 'id'>) => {
+    setCustomFoods(prev => {
+      const next = [...prev, { ...food, id: Date.now().toString() }];
+      saveCustomFoodsSafe(next);
+      return next;
+    });
+  }, []);
+
+  const removeCustomFood = useCallback((id: string) => {
+    setCustomFoods(prev => {
+      const next = prev.filter(f => f.id !== id);
+      saveCustomFoodsSafe(next);
+      return next;
+    });
+  }, []);
+
+  /** Download a full JSON backup (history + goals + custom foods) to the device. */
+  const exportData = useCallback(() => {
+    const now = Date.now();
+    const payload = serializeExport(history, goals, customFoods, new Date(now).toISOString());
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `calorie-tracker-backup-${stamp()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    // Revoke on the next tick so the download has a chance to start.
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    setLastBackupAt(now);
+    setLastBackupState(now);
+  }, [history, goals, customFoods]);
+
+  /**
+   * Import a backup file and LOSSLESSLY merge it into the current data. Never
+   * overwrites newer local days with older imported ones. Snapshots the
+   * pre-import state so the merge can be undone.
+   */
+  const importData = useCallback(async (file: File): Promise<ImportResult> => {
+    let text: string;
+    try {
+      text = await file.text();
+    } catch {
+      return { ok: false, error: 'Could not read that file.' };
+    }
+
+    let parsed: { history: History; goals: Goals | null; customFoods: CustomFood[] | null };
+    try {
+      parsed = parseImport(text);
+    } catch (e) {
+      return { ok: false, error: e instanceof Error ? e.message : 'Invalid backup file.' };
+    }
+
+    const imported = normalizeHistory(parsed.history);
+
+    const result = await new Promise<ImportResult>(resolve => {
+      setHistory(prev => {
+        // Snapshot current state so the import can be undone.
+        try {
+          window.localStorage.setItem(PREIMPORT_KEY, JSON.stringify(prev));
+        } catch {
+          /* non-fatal */
+        }
+        const { merged, summary } = mergeImport(prev, imported);
+        saveHistorySafe(merged);
+        resolve({ ok: true, summary });
+        return merged;
+      });
+    });
+
+    // Goals only fill in if they look valid; never clobber with junk.
+    if (parsed.goals && typeof parsed.goals.calories === 'number') {
+      setGoals(parsed.goals);
+      saveGoalsSafe(parsed.goals);
+    }
+
+    // Custom foods union (existing entries win on id conflict).
+    if (parsed.customFoods) {
+      setCustomFoods(prev => {
+        const next = mergeCustomFoods(prev, parsed.customFoods as CustomFood[]);
+        saveCustomFoodsSafe(next);
+        return next;
+      });
+    }
+
+    return result;
+  }, []);
+
+  /** Roll back the most recent import using the pre-import snapshot. */
+  const undoImport = useCallback((): boolean => {
+    const snap = safeGet(PREIMPORT_KEY);
+    if (!snap) return false;
+    try {
+      const restored = normalizeHistory(JSON.parse(snap) as History);
+      setHistory(restored);
+      saveHistorySafe(restored);
+      safeRemove(PREIMPORT_KEY);
+      return true;
+    } catch {
+      return false;
+    }
+  }, []);
+
+  return {
+    data,
+    history,
+    goals,
+    customFoods,
+    ready,
+    lastBackupAt,
+    addFood,
+    setCalories,
+    setProtein,
+    setCarbs,
+    reset,
+    keepDay,
+    discardDay,
+    updateGoals,
+    addCustomFood,
+    removeCustomFood,
+    exportData,
+    importData,
+    undoImport,
+  };
 }

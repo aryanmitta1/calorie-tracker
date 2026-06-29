@@ -1,7 +1,7 @@
 {
-  "name": "NutriTrack",
-  "short_name": "NutriTrack",
-  "description": "Daily calorie & protein tracker",
+  "name": "Aryan's Calorie Tracker",
+  "short_name": "Calories",
+  "description": "Daily calorie, protein & carb tracker",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#06030f",

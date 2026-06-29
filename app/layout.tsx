@@ -5,13 +5,13 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export const metadata: Metadata = {
-  title: 'NutriTrack',
-  description: 'Daily calorie & protein tracker',
+  title: "Aryan's Calorie Tracker",
+  description: 'Daily calorie, protein & carb tracker',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'NutriTrack',
+    title: 'Calories',
   },
   other: {
     'mobile-web-app-capable': 'yes',
