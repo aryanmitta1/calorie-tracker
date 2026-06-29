@@ -11,7 +11,6 @@ import BarcodeScanner from '@/components/BarcodeScanner';
 import FoodLog from '@/components/FoodLog';
 import GoalSettings from '@/components/GoalSettings';
 import DataBackup from '@/components/DataBackup';
-import InstallBanner from '@/components/InstallBanner';
 import HistoryView from '@/components/HistoryView';
 import ResetDayDialog from '@/components/ResetDayDialog';
 import BottomNav, { type Tab } from '@/components/BottomNav';
@@ -81,8 +80,6 @@ export default function Home() {
                 />
               )}
             </AnimatePresence>
-
-            <InstallBanner lastBackupAt={lastBackupAt} onBackupNow={exportData} />
 
             <div className="grid grid-cols-2 gap-3 mb-5">
               <div className="col-span-2">
