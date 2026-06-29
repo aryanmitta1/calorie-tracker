@@ -16,7 +16,7 @@ import ResetDayDialog from '@/components/ResetDayDialog';
 import BottomNav, { type Tab } from '@/components/BottomNav';
 
 export default function Home() {
-  const { data, history, goals, customFoods, ready, lastBackupAt, addFood, setCalories, setProtein, setCarbs, keepDay, discardDay, updateGoals, addCustomFood, removeCustomFood, exportData, importData, undoImport } = useNutrition();
+  const { data, history, goals, customFoods, ready, lastBackupAt, addFood, removeFood, adjustCalories, adjustProtein, adjustCarbs, keepDay, discardDay, updateGoals, addCustomFood, removeCustomFood, exportData, importData, undoImport } = useNutrition();
   const [tab, setTab] = useState<Tab>('today');
   const [showSettings, setShowSettings] = useState(false);
   const [showResetDialog, setShowResetDialog] = useState(false);
@@ -91,12 +91,12 @@ export default function Home() {
 
             <div className="card mb-5 space-y-4">
               <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-widest">Manual Adjust</h2>
-              <NutrientInput label="Calories" value={data.calories} unit="kcal" color="amber" onChange={setCalories} />
-              <NutrientInput label="Protein" value={data.protein} unit="g" color="emerald" onChange={setProtein} />
-              <NutrientInput label="Carbs" value={data.carbs} unit="g" color="violet" onChange={setCarbs} />
+              <NutrientInput label="Calories" value={data.calories} unit="kcal" color="amber" onAdjust={adjustCalories} />
+              <NutrientInput label="Protein" value={data.protein} unit="g" color="emerald" onAdjust={adjustProtein} />
+              <NutrientInput label="Carbs" value={data.carbs} unit="g" color="violet" onAdjust={adjustCarbs} />
             </div>
 
-            <FoodLog entries={data.log} />
+            <FoodLog entries={data.log} onRemove={removeFood} />
 
             <motion.button
               onClick={() => setShowResetDialog(true)}
@@ -121,7 +121,7 @@ export default function Home() {
             <FoodInput onAdd={addFood} />
             <FoodSearch onAdd={addFood} />
             <BarcodeScanner onAdd={addFood} />
-            <FoodLog entries={data.log} />
+            <FoodLog entries={data.log} onRemove={removeFood} />
           </>
         )}
 

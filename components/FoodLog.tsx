@@ -4,9 +4,10 @@ import type { FoodEntry } from '@/hooks/useNutrition';
 
 interface Props {
   entries: FoodEntry[];
+  onRemove?: (id: string) => void;
 }
 
-export default function FoodLog({ entries }: Props) {
+export default function FoodLog({ entries, onRemove }: Props) {
   if (entries.length === 0) return null;
 
   return (
@@ -32,10 +33,21 @@ export default function FoodLog({ entries }: Props) {
                   })}
                 </p>
               </div>
-              <div className="flex flex-col items-end shrink-0 gap-0.5 text-xs font-semibold tabular-nums">
-                <span className="text-orange-500">+{entry.calories} kcal</span>
-                <span className="text-blue-400">+{entry.protein}g P</span>
-                <span className="text-violet-400">+{entry.carbs}g C</span>
+              <div className="flex items-center shrink-0 gap-2">
+                <div className="flex flex-col items-end gap-0.5 text-xs font-semibold tabular-nums">
+                  <span className="text-orange-500">+{entry.calories} kcal</span>
+                  <span className="text-blue-400">+{entry.protein}g P</span>
+                  <span className="text-violet-400">+{entry.carbs}g C</span>
+                </div>
+                {onRemove && (
+                  <button
+                    onClick={() => onRemove(entry.id)}
+                    aria-label={`Remove ${entry.description}`}
+                    className="w-7 h-7 flex items-center justify-center rounded-lg text-zinc-600 hover:bg-red-500/10 hover:text-red-400 transition-colors active:scale-95 shrink-0"
+                  >
+                    ✕
+                  </button>
+                )}
               </div>
             </motion.li>
           ))}

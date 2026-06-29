@@ -198,16 +198,37 @@ export function useNutrition() {
     }));
   }, [commit]);
 
-  const setCalories = useCallback((calories: number) => {
-    commit(day => ({ ...day, calories: Math.max(0, calories) }));
+  /**
+   * Remove a single logged entry (e.g. one added by accident) and subtract its
+   * macros from the day's running totals. Totals are floored at 0 so a stale or
+   * out-of-sync entry can never push a total negative.
+   */
+  const removeFood = useCallback((id: string) => {
+    commit(day => {
+      const entry = day.log.find(e => e.id === id);
+      if (!entry) return day;
+      return {
+        ...day,
+        calories: Math.max(0, day.calories - entry.calories),
+        protein: Math.max(0, day.protein - entry.protein),
+        carbs: Math.max(0, day.carbs - entry.carbs),
+        log: day.log.filter(e => e.id !== id),
+      };
+    });
   }, [commit]);
 
-  const setProtein = useCallback((protein: number) => {
-    commit(day => ({ ...day, protein: Math.max(0, protein) }));
+  // Manual adjust applies a signed delta to a running total (e.g. +20, -50)
+  // rather than overwriting it. Totals are floored at 0.
+  const adjustCalories = useCallback((delta: number) => {
+    commit(day => ({ ...day, calories: Math.max(0, day.calories + delta) }));
   }, [commit]);
 
-  const setCarbs = useCallback((carbs: number) => {
-    commit(day => ({ ...day, carbs: Math.max(0, carbs) }));
+  const adjustProtein = useCallback((delta: number) => {
+    commit(day => ({ ...day, protein: Math.max(0, day.protein + delta) }));
+  }, [commit]);
+
+  const adjustCarbs = useCallback((delta: number) => {
+    commit(day => ({ ...day, carbs: Math.max(0, day.carbs + delta) }));
   }, [commit]);
 
   // Reset clears only today; prior days in history are preserved.
@@ -357,9 +378,10 @@ export function useNutrition() {
     ready,
     lastBackupAt,
     addFood,
-    setCalories,
-    setProtein,
-    setCarbs,
+    adjustCalories,
+    adjustProtein,
+    adjustCarbs,
+    removeFood,
     reset,
     keepDay,
     discardDay,
