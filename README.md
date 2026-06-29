@@ -1,2 +1,2 @@
 # calorie-tracker
-i hate all cal tracking apps so i made my own lol 
+i hate all tracking apps so i made my own lol 
