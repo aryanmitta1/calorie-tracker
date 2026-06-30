@@ -104,7 +104,7 @@ export default function Home() {
               className="w-full mt-5 py-3.5 rounded-2xl border text-sm font-medium transition-all duration-300
                 bg-zinc-900 border-zinc-800 text-zinc-600 hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-400"
             >
-              Reset Day
+              End Day
             </motion.button>
           </>
         )}

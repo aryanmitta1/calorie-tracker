@@ -34,6 +34,12 @@ function summarize(date: string, day: DayData | undefined): DaySummary {
   if (!day) {
     return { date, calories: 0, protein: 0, carbs: 0, entries: 0, empty: true };
   }
+  // A day only counts toward stats once the user has explicitly ended + logged
+  // it. Until then it's a draft: it shows on the Today screen but is treated as
+  // empty everywhere stats are derived (averages, streak, chart, History list).
+  if (!day.committed) {
+    return { date, calories: 0, protein: 0, carbs: 0, entries: 0, empty: true };
+  }
   return {
     date,
     calories: day.calories,
@@ -88,7 +94,7 @@ export function averages(summaries: DaySummary[]): Averages {
 export function currentStreak(history: History, today = new Date()): number {
   const logged = (d: Date) => {
     const day = history[toKey(d)];
-    return !!day && day.log.length > 0;
+    return !!day && day.committed === true && day.log.length > 0;
   };
 
   let streak = 0;

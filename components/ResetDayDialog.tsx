@@ -31,10 +31,11 @@ export default function ResetDayDialog({ day, onSave, onDiscard, onCancel }: Pro
         className="w-full max-w-sm card border border-zinc-700 space-y-4"
       >
         <div>
-          <h2 className="text-base font-bold text-white">Finish today?</h2>
+          <h2 className="text-base font-bold text-white">End today?</h2>
           <p className="text-xs text-zinc-500 mt-1 leading-snug">
-            Save today to your long-term log, or discard it. Discarding deletes today&apos;s
-            data and it won&apos;t count toward your stats.
+            Today isn&apos;t counted yet. Log it to add it to your averages, streak, and
+            history — or discard it to clear today without saving. Nothing is logged
+            unless you choose &ldquo;Log this day.&rdquo;
           </p>
         </div>
 
@@ -51,9 +52,10 @@ export default function ResetDayDialog({ day, onSave, onDiscard, onCancel }: Pro
         <div className="space-y-2 pt-1">
           <button
             onClick={onSave}
-            className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold transition-colors active:scale-[0.98]"
+            disabled={empty}
+            className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-emerald-600 text-white text-sm font-semibold transition-colors active:scale-[0.98]"
           >
-            Save to log
+            Log this day
           </button>
           <button
             onClick={onDiscard}

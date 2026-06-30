@@ -35,6 +35,13 @@ export interface DayData {
   carbs: number;
   log: FoodEntry[];
   date: string;
+  /**
+   * Whether the user has explicitly ended this day and chosen to log it. Only
+   * committed days count toward stats, averages, streak, and the History list.
+   * Today is a draft (false/undefined) until the user confirms it via "End Day".
+   * Days are auto-persisted while in draft so a refresh never loses them.
+   */
+  committed?: boolean;
 }
 
 export type History = Record<string, DayData>;
@@ -95,6 +102,7 @@ function normalizeDay(raw: Partial<DayData> | undefined, date: string): DayData 
     protein: raw.protein ?? 0,
     carbs: raw.carbs ?? 0,
     log: (raw.log ?? []).map(e => ({ ...e, carbs: e.carbs ?? 0 })),
+    committed: raw.committed === true,
   };
 }
 
@@ -245,13 +253,14 @@ export function useNutrition() {
   }, [commit]);
 
   /**
-   * Keep today in the long-term log. Today is already auto-saved under its date
-   * key, so this is a no-op for storage — it exists for an explicit, readable
-   * call site at the "Save to log" choice.
+   * Explicitly end today and add it to the long-term log. This is the ONLY way
+   * a day starts counting toward stats/averages/streak/History — until it's
+   * called, today is a draft that shows on the Today screen but is hidden
+   * everywhere else. Idempotent: re-committing an already-logged day is a no-op.
    */
   const keepDay = useCallback(() => {
-    /* already persisted by commit() on every edit */
-  }, []);
+    commit(day => (day.committed ? day : { ...day, committed: true }));
+  }, [commit]);
 
   /**
    * Discard today entirely: remove its record from history so it does not count
